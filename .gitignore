@@ -1,0 +1,9 @@
+# Never commit real credentials
+php/mailconfig.local.php
+test.php
+# Common local/OS junk
+uploads/properties/*
+!uploads/properties/.gitkeep
+*.log
+.DS_Store
+Thumbs.db

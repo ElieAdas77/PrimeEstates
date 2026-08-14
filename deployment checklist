@@ -1,0 +1,75 @@
+# PrimeEstates — Deployment Checklist
+
+Run through this before putting the site anywhere public (a real
+domain, a hosting provider, etc.) — none of this matters for local
+XAMPP use, but all of it matters once real visitors can reach the site.
+
+## 1. Environment config
+
+- [ ] In `php/config.php`, change `ENVIRONMENT` from `"development"` to `"production"`.
+      This turns off on-screen PHP error messages (which can leak file
+      paths, database structure, etc. to visitors) and stops DB
+      connection failures from showing internal error details.
+- [ ] Change the database credentials in `config.php` away from
+      `root` / empty password — that's a local-XAMPP-only default and
+      should never be used on a live server.
+- [ ] Move `config.php`'s credentials (and `mailConfig.php`'s Gmail
+      App Password) out of the file and into environment variables if
+      your host supports it. At minimum, make sure neither file is
+      ever committed to a public GitHub repo.
+
+## 2. HTTPS
+
+- [ ] Get an SSL certificate for your domain (many hosts provide free
+      ones via Let's Encrypt) and force all traffic to HTTPS.
+- [ ] Once on HTTPS, consider adding `session.cookie_secure = 1` to
+      your PHP session config so session cookies are never sent over
+      plain HTTP.
+
+## 3. File uploads
+
+- [ ] Confirm `uploads/properties/` has write permission for the web
+      server user, but is **not** executable — you don't want someone
+      uploading a disguised `.php` file that the server would run.
+- [ ] Double check `addProperty.php` only accepts image file types
+      (extension AND actual content, not just the filename) before
+      this goes live — a user-controlled upload folder is a common
+      attack surface.
+
+## 4. Email
+
+- [ ] Confirm `mailConfig.php` has real production values, not the
+      placeholder `your-email@gmail.com` text.
+- [ ] Gmail SMTP works fine at small scale, but if you expect real
+      volume, consider a dedicated transactional email service
+      (Brevo, SendGrid, etc.) for better deliverability.
+
+## 5. Database
+
+- [ ] Take a backup of your local `primeestates` database (phpMyAdmin
+      → Export) before migrating it to the production server.
+- [ ] Re-run all the `.sql` files you've been given in order on the
+      production database if you're starting fresh instead of migrating.
+- [ ] Change the demo/seed admin account's password before going live
+      if `seed_demo_properties.sql` was tied to a real login you use elsewhere.
+
+## 6. General hardening
+
+- [ ] Make sure phpMyAdmin isn't publicly reachable on the production
+      server (or is protected with its own login/IP restriction) —
+      XAMPP's default setup is meant for local use only.
+- [ ] Review the rate limits in `rateLimiter.php` — 5 login attempts /
+      15 min and 3 registrations / hour are reasonable defaults, but
+      adjust if your real usage pattern needs different numbers.
+- [ ] Confirm `resetPassword.php` links use your real production
+      domain — they're built dynamically from the request host, so
+      this should work automatically, but verify once deployed.
+
+## 7. Final smoke test (do this on the live server, not just locally)
+
+- [ ] Register a new account, log in, log out
+- [ ] Submit a property, approve it as admin, confirm it appears on the homepage
+- [ ] Favorite a property, confirm it shows in the Favorites list
+- [ ] Send a contact message, confirm it appears in the admin dashboard
+- [ ] Request a password reset, confirm the email arrives and the link works
+- [ ] Try 5+ wrong login attempts, confirm you get rate-limited
