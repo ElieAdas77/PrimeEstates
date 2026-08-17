@@ -602,9 +602,17 @@ $rentProperties = getApprovedProperties($conn, "rent");
         <button class="close-modal">&times;</button>
 
         <div class="modal-image-container">
-          <img id="modalImg" src="" alt="Property Image" />
-          <span class="modal-badge">PROPERTY</span>
-        </div>
+  <img id="modalImg" src="" alt="Property Image" />
+  <span class="modal-badge">PROPERTY</span>
+  <button id="modalImgPrev" class="modal-img-nav modal-img-prev">
+    <i class="fa-solid fa-chevron-left"></i>
+  </button>
+  <button id="modalImgNext" class="modal-img-nav modal-img-next">
+    <i class="fa-solid fa-chevron-right"></i>
+  </button>
+</div>
+
+<div id="modalThumbnails" class="modal-thumbnails"></div>
 
         <div class="modal-info">
           <p class="modal-location" id="modalLocation"></p>
