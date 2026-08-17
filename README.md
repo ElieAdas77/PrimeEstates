@@ -1,105 +1,54 @@
 # PrimeEstates
 
-A real estate listing site — property submissions with admin
-approval, favorites, contact form, search, and a full auth system.
-Built as a PHP + MySQL + vanilla JS project on XAMPP.
+A full-stack real estate listing platform built with PHP, MySQL, and vanilla JavaScript. Users can browse, search, and favorite properties, submit their own listings for review, and admins moderate submissions through a dedicated dashboard.
 
-## Stack
+**Live demo:** http://primeestates.atwebpages.com
+**Repo:** https://github.com/EliAdas77/PrimeEstates
 
-- **Backend:** PHP + MySQLi
-- **Database:** MySQL (`primeestates`)
-- **Frontend:** Vanilla JS/CSS, no framework
-- **Local environment:** XAMPP (Apache + MySQL + PHP)
+> Note: the live demo runs on free hosting without HTTPS, so browsers will show a "Not secure" notice. This is expected on the free tier and doesn't affect functionality.
 
-## Folder structure
+## Features
+
+- **Authentication** — registration, login, and password reset via email, with bcrypt password hashing and session-based auth
+- **Security** — CSRF token verification on every state-changing request, IP-based rate limiting on login/registration/password-reset, and server-side validation throughout
+- **Property listings** — search and filter by location, type, price, and bedrooms, with client-side pagination and an image gallery modal (multi-photo carousel with thumbnails)
+- **User submissions** — logged-in users can submit properties with multiple photo uploads, which stay in a "pending" state until approved
+- **Admin dashboard** — a separate moderation panel to approve, reject, or reset property submissions, and review contact messages
+- **Image upload validation** — uploaded files are checked against their actual MIME type and re-verified with `getimagesize()`, not just their file extension, before being saved
+- **Favorites** — logged-in users can save properties and view them in a dedicated list
+- **Responsive design** — mobile-first layout with a collapsible nav menu, tested across breakpoints
+
+## Tech stack
+
+- **Backend:** PHP (mysqli, prepared statements throughout)
+- **Database:** MySQL
+- **Frontend:** Vanilla JavaScript (ES6), HTML5, CSS3 — no frameworks
+- **Email:** Custom SMTP client built from raw sockets (no external mail library)
+
+## Project structure
 
 ```
-PrimeEstates/
-  index.php              -> homepage
-  admin.php              -> admin dashboard (reached by direct URL only, no nav link)
-  resetPassword.php      -> password reset landing page (opened from emailed link)
-  css/
-    main22.css            -> all site styles
-    admin.css             -> admin dashboard styles
-  js/
-    auth.js               -> register/login/logout, My Properties, Favorites modal
-    addProperty.js         -> "Add Property" form flow
-    contact.js             -> contact form submission
-    favorites.js           -> heart icon click handling
-    admin.js               -> admin dashboard (properties + messages tabs)
-    loadingState.js         -> shared button spinner helper
-    toast.js                -> shared toast notification helper
-    escapeHtml.js            -> shared HTML-escaping helper (XSS protection)
-    search.js, propertyPagination.js, propertyModal.js, propertyToggle.js,
-    animations.js, smoothScroll.js, heroSlider.js, mobileMenu.js, main.js
-  php/
-    config.php             -> DB connection + session start + environment flag
-    rateLimiter.php          -> shared rate-limit helper (login/register/reset)
-    simpleMailer.php         -> minimal SMTP client (no external library)
-    mailConfig.php            -> Gmail SMTP credentials (fill in your own)
-    login.php, register.php, logout.php, checkSession.php
-    requestPasswordReset.php, resetPasswordSubmit.php
-    addProperty.php, myProperties.php
-    adminProperties.php, updatePropertyStatus.php, adminMessages.php
-    contact.php
-    toggleFavorite.php, myFavorites.php
-  uploads/
-    properties/            -> uploaded property images (auto-created)
+├── index.php               # Homepage, property listings
+├── admin.php                # Admin moderation dashboard
+├── Resetpassword.php        # Password reset landing page
+├── css/                     # Stylesheets
+├── js/                      # Frontend JavaScript, one file per feature
+├── php/                     # Backend endpoints and shared logic
+│   ├── config.php           # DB connection + CSRF helpers
+│   ├── imageUploadHelper.php
+│   ├── ratelimiter.php
+│   └── ...
+└── uploads/properties/      # User-uploaded property images
 ```
 
-## Local setup (XAMPP)
+## Running locally
 
-1. Place this folder inside `htdocs` so it's served at
-   `http://localhost/PrimeEstates/`.
-2. Start Apache and MySQL in the XAMPP control panel.
-3. In phpMyAdmin, create a database called `primeestates`.
-4. Run every `.sql` file in this project, in this order:
-   - `properties_table.sql`
-   - `messages_table.sql`
-   - `favorites_table.sql`
-   - `rate_limits_table.sql`
-   - `password_resets_table.sql`
-   - `seed_demo_properties.sql` (optional — seeds the original 8 demo listings as real approved properties)
-5. Fill in `php/mailConfig.php` with a real Gmail address + App
-   Password (see below) so password reset emails can actually send.
-6. Open `http://localhost/PrimeEstates/` and register an account.
+1. Clone the repo into your local server's web root (e.g. XAMPP's `htdocs/`)
+2. Create a MySQL database and import the schema (see `/database` if included, or export your own from a running instance)
+3. Update `php/config.php` with your local database credentials
+4. Copy `php/mailconfig.local.php.example` to `php/mailconfig.local.php` and fill in real SMTP credentials if you want password-reset emails to work locally
+5. Visit `index.php` through your local server
 
-## Making an account admin
+## Security notes
 
-There's no UI for this — it's intentional, so random users can't
-grant themselves admin. In phpMyAdmin:
-
-1. Go to the `users` table.
-2. Find your account's row, edit the `role` column from `user` to `admin`.
-3. **Log out and log back in** on the site — the session won't pick
-   up the new role until you do.
-4. Visit `http://localhost/PrimeEstates/admin.php` directly.
-
-## Setting up Gmail SMTP (for password reset emails)
-
-1. Enable 2-Step Verification on the Gmail account you want to send from
-   (myaccount.google.com → Security).
-2. Generate an App Password at myaccount.google.com/apppasswords.
-3. Put that Gmail address and the 16-character App Password into
-   `php/mailConfig.php` — **not** your normal Gmail login password.
-
-## Key design decisions worth remembering
-
-- **Properties require admin approval.** Submitting a property always
-  inserts it with `status = 'pending'`; it only appears on the public
-  site once an admin approves it via the dashboard.
-- **Demo cards are real database rows**, not hardcoded HTML. The
-  original 8 example listings were seeded into the `properties` table
-  (see `seed_demo_properties.sql`) so every card — demo or real — goes
-  through the same rendering path and supports favoriting.
-- **Rate limiting is IP-based**, tracked in the `rate_limits` table:
-  5 failed logins / 15 min, 3 registrations / hour, 3 password reset
-  requests / hour.
-- **Password reset tokens expire in 1 hour** and are invalidated the
-  moment any one of them is successfully used (so an old leaked email
-  link can't be reused after a legitimate reset).
-
-## Before deploying anywhere public
-
-See `DEPLOYMENT_CHECKLIST.md` — covers environment config, HTTPS,
-file upload safety, and a pre-launch smoke test.
+`php/mailconfig.local.php` (SMTP credentials) is intentionally excluded from this repo via `.gitignore` — it's created locally/on the server and never committed.
